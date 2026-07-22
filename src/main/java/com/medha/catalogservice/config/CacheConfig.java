@@ -7,6 +7,8 @@ import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 /**
  * Wires up a {@link CaffeineCacheManager} with one distinctly-tuned {@link Caffeine}
  * builder per named cache. Spring's {@code CaffeineCacheManager} normally applies a
@@ -16,6 +18,14 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p>{@code recordStats()} is enabled on every cache so that hit/miss/eviction
  * counters are available at runtime through {@code CacheAdminController}.</p>
+ *
+ * <p>{@link CaffeineCacheManager#setCacheNames} is called last to switch the manager
+ * out of its default "dynamic" mode. Without it, {@code getCache(name)} would
+ * auto-vivify a brand-new, unbounded, unconfigured cache for ANY name -- including
+ * typos -- instead of returning {@code null} for names that were never registered.
+ * Custom caches already registered via {@code registerCustomCache} above are
+ * preserved: {@code setCacheNames} only creates a cache for a name that isn't
+ * already present in the manager.</p>
  */
 @Configuration
 @EnableCaching
@@ -29,6 +39,9 @@ public class CacheConfig {
         cacheManager.registerCustomCache(CacheNames.PRODUCT_LISTS, buildCaffeine(properties.getProductLists()).build());
         cacheManager.registerCustomCache(CacheNames.PRODUCT_SEARCH, buildCaffeine(properties.getProductSearch()).build());
         cacheManager.registerCustomCache(CacheNames.CATEGORIES, buildCaffeine(properties.getCategories()).build());
+
+        cacheManager.setCacheNames(List.of(
+                CacheNames.PRODUCTS, CacheNames.PRODUCT_LISTS, CacheNames.PRODUCT_SEARCH, CacheNames.CATEGORIES));
 
         return cacheManager;
     }
