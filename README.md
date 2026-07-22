@@ -1,9 +1,9 @@
 # catalog-service — Product Catalog Cache
 
-A Spring Boot 3 / Java 21 product catalog service that demonstrates **Caffeine** in-process caching — from cache tuning per use case to observing hit/miss/eviction behavior in a live REST API.
+A Spring Boot 4 / Java 25 product catalog service that demonstrates **Caffeine** in-process caching — from cache tuning per use case to observing hit/miss/eviction behavior in a live REST API.
 
-![Java](https://img.shields.io/badge/Java-21-orange)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen)
+![Java](https://img.shields.io/badge/Java-25-orange)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.6-brightgreen)
 ![Caffeine](https://img.shields.io/badge/Cache-Caffeine-blueviolet)
 ![MySQL](https://img.shields.io/badge/DB-MySQL%208-blue)
 ![Flyway](https://img.shields.io/badge/Migrations-Flyway-red)
@@ -164,8 +164,8 @@ This is a **single-module** project (no multi-module Maven build), so there is o
 
 | Layer               | Technology                                   | Why                                                                 |
 |---------------------|-----------------------------------------------|----------------------------------------------------------------------|
-| Language / Runtime  | Java 21                                       | Current LTS, records used throughout for DTOs                        |
-| Framework           | Spring Boot 3.3.4                              | Web, DI, transaction management, caching abstraction                 |
+| Language / Runtime  | Java 25                                       | Current LTS, records used throughout for DTOs                        |
+| Framework           | Spring Boot 4.0.6                               | Web, DI, transaction management, caching abstraction                 |
 | Caching             | Caffeine + `spring-boot-starter-cache`         | The technology under study — high-performance in-process cache        |
 | Persistence         | Spring Data JPA / Hibernate                    | Repository abstraction over the domain model                        |
 | Database            | MySQL 8 (Docker) / H2 in-memory (tests)        | Realistic RDBMS in prod-like env; fast, dependency-free in tests      |
@@ -291,8 +291,8 @@ Same shape, but: H2 in-memory MySQL-mode datasource, Flyway disabled, `ddl-auto:
 
 | Path | Purpose |
 |---|---|
-| `pom.xml` | Single-module Maven build; declares Spring Boot 3.3.4 parent, Web/JPA/Cache/Validation/Actuator starters, Caffeine, Flyway (+ MySQL dialect), MySQL driver, Lombok, and test deps (JUnit via starter-test, H2). |
-| `Dockerfile` | Multi-stage build: `maven:3.9.9-eclipse-temurin-21` compiles the jar, `eclipse-temurin:21-jre-alpine` runs it as a non-root `spring` user, with an Actuator-health-based `HEALTHCHECK`. |
+| `pom.xml` | Single-module Maven build; declares Spring Boot 4.0.6 parent, Web/JPA/Cache/Validation/Actuator starters, Caffeine, Flyway (+ MySQL dialect), MySQL driver, Lombok 1.18.44, the Boot 4 `spring-boot-starter-webmvc-test`/`spring-boot-starter-data-jpa-test` test slices, and test deps (JUnit via starter-test, H2). |
+| `Dockerfile` | Multi-stage build: `maven:3.9.16-eclipse-temurin-25` compiles the jar, `eclipse-temurin:25-jre-alpine` runs it as a non-root `spring` user, with an Actuator-health-based `HEALTHCHECK`. |
 | `docker-compose.yml` | Two services only (per this project's "no extra infra" scope): `mysql` (with a healthcheck gating startup) and `catalog-service` (built from the Dockerfile, waiting on MySQL's healthcheck). |
 | `.dockerignore` / `.gitignore` | Keep build artifacts, IDE metadata, and the Docker/Compose files themselves out of the build context / VCS noise. |
 | `src/main/java/.../CatalogServiceApplication.java` | Boot entrypoint; `@ConfigurationPropertiesScan` picks up `CacheProperties` without needing an explicit `@EnableConfigurationProperties`. |
@@ -326,7 +326,7 @@ Same shape, but: H2 in-memory MySQL-mode datasource, Flyway disabled, `ddl-auto:
 ### Prerequisites
 
 - Docker + Docker Compose
-- (optional, for local dev outside Docker) JDK 21 and Maven 3.9+
+- (optional, for local dev outside Docker) JDK 25 and Maven 3.9+
 
 ### Run everything with Docker Compose
 
@@ -548,13 +548,13 @@ The split between `ProductServiceTest` (pure logic, no proxy) and `ProductCacheI
 ### `Dockerfile` (multi-stage)
 
 ```dockerfile
-FROM maven:3.9.9-eclipse-temurin-21 AS build   # build stage: full JDK + Maven
+FROM maven:3.9.16-eclipse-temurin-25 AS build   # build stage: full JDK + Maven
 ...
 RUN mvn -B -q dependency:go-offline            # cache deps in their own layer
 COPY src ./src
 RUN mvn -B -q clean package -DskipTests        # tests already ran in CI/locally
 
-FROM eclipse-temurin:21-jre-alpine AS runtime  # runtime stage: JRE only, tiny image
+FROM eclipse-temurin:25-jre-alpine AS runtime  # runtime stage: JRE only, tiny image
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring                              # non-root — smaller attack surface
 COPY --from=build /build/target/catalog-service.jar app.jar
