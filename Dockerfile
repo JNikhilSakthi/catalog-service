@@ -1,5 +1,5 @@
 # --- Build stage ---
-FROM maven:3.9.9-eclipse-temurin-21 AS build
+FROM maven:3.9.16-eclipse-temurin-25 AS build
 WORKDIR /build
 
 # Leverage layer caching for dependencies
@@ -10,7 +10,7 @@ COPY src ./src
 RUN mvn -B -q clean package -DskipTests
 
 # --- Runtime stage ---
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:25-jre-alpine AS runtime
 WORKDIR /app
 
 RUN addgroup -S spring && adduser -S spring -G spring
