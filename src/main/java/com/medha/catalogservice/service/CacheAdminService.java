@@ -61,6 +61,14 @@ public class CacheAdminService {
     }
 
     private Cache<Object, Object> nativeCache(String cacheName) {
+        // Check against the manager's known cache names rather than trusting a non-null
+        // getCache() result: a dynamic CaffeineCacheManager (the default when
+        // setCacheNames(...) hasn't been called) auto-vivifies a brand-new cache for
+        // ANY name on getCache(), so a null/type check alone would never catch a typo'd
+        // or otherwise unregistered cache name.
+        if (!cacheManager.getCacheNames().contains(cacheName)) {
+            throw new InvalidCacheNameException(cacheName);
+        }
         org.springframework.cache.Cache springCache = cacheManager.getCache(cacheName);
         if (!(springCache instanceof CaffeineCache caffeineCache)) {
             throw new InvalidCacheNameException(cacheName);
