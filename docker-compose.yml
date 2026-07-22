@@ -1,0 +1,49 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: catalog-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: catalog_db
+      MYSQL_USER: catalog_user
+      MYSQL_PASSWORD: catalog_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - catalog-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - catalog-net
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: catalog-service
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: catalog_db
+      DB_USERNAME: catalog_user
+      DB_PASSWORD: catalog_pass
+      SIMULATED_LATENCY_MS: 250
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - catalog-net
+
+networks:
+  catalog-net:
+    driver: bridge
+
+volumes:
+  catalog-mysql-data:

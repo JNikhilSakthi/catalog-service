@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:catalog_test;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+
+  flyway:
+    enabled: false
+
+  cache:
+    type: caffeine
+
+catalog:
+  cache:
+    # No artificial delay in tests -- keeps the suite fast. Cache-hit-vs-miss
+    # behavior is verified via Mockito call counts, not wall-clock timing.
+    simulated-repository-latency-ms: 0
+    products:
+      maximum-size: 500
+      expire-after-write: 10m
+    product-lists:
+      maximum-size: 200
+      expire-after-write: 5m
+    product-search:
+      maximum-size: 100
+      expire-after-write: 2m
+    categories:
+      maximum-size: 100
+      expire-after-access: 30m
